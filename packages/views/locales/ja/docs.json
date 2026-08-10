@@ -1,0 +1,14 @@
+{
+  "page": {
+    "title": "ドキュメント"
+  },
+  "setup": {
+    "lead": "ワークスペースドキュメントの編集 URL が未設定です。workspace-docs をデプロイし、Multica Web から参照してください。",
+    "step_deploy": "wuzihuang/workspace-docs をビルドして起動（Docker または npm run build && npm start）。",
+    "step_env": "NEXT_PUBLIC_WORKSPACE_DOCS_URL に公開 URL（または同一オリジンのリバースプロキシ）を設定。",
+    "step_rebuild": "環境変数をフロントに埋め込むため multica-web を再ビルド/再デプロイ。",
+    "local_hint": "ローカル: workspace-docs で npm run dev → http://localhost:5177、NEXT_PUBLIC_WORKSPACE_DOCS_URL=http://localhost:5177。",
+    "open_repo": "workspace-docs を開く",
+    "back_projects": "プロジェクトに戻る"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "page": {
+    "title": "文档"
+  },
+  "setup": {
+    "lead": "尚未配置工作区文档编辑器地址。先部署 workspace-docs 服务，再让 Multica Web 指向它。",
+    "step_deploy": "构建并运行 wuzihuang/workspace-docs（Docker 镜像，或 npm run build && npm start）。",
+    "step_env": "设置 NEXT_PUBLIC_WORKSPACE_DOCS_URL 为该服务的公网 URL（或同源反代路径）。",
+    "step_rebuild": "重新构建/部署 multica-web，使环境变量进入前端包。",
+    "local_hint": "本地开发：在 workspace-docs 执行 npm run dev → http://localhost:5177，并设置 NEXT_PUBLIC_WORKSPACE_DOCS_URL=http://localhost:5177。",
+    "open_repo": "打开 workspace-docs 仓库",
+    "back_projects": "返回项目"
+  }
+}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronRight,
+  FileText,
   FolderGit,
   FolderOpen,
   Pencil,
@@ -19,7 +20,7 @@ import {
   useUpdateProjectResource,
 } from "@multica/core/projects";
 import { useWorkspaceId } from "@multica/core/hooks";
-import { useCurrentWorkspace } from "@multica/core/paths";
+import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
 import type {
   GithubRepoResourceRef,
   LocalDirectoryResourceRef,
@@ -45,6 +46,20 @@ import {
 } from "../../platform";
 import { useT } from "../../i18n";
 import { githubShortLabel } from "../../common/github-url";
+import { AppLink } from "../../navigation";
+
+/** Detect the workspace-docs Markdown store repo for one-click open. */
+function isWorkspaceDocsRepo(url: string): boolean {
+  const normalized = url
+    .trim()
+    .toLowerCase()
+    .replace(/\.git$/, "")
+    .replace(/\/$/, "");
+  return (
+    normalized.endsWith("github.com/wuzihuang/workspace-docs") ||
+    normalized.endsWith("github.com:wuzihuang/workspace-docs")
+  );
+}
 
 // Project Resources sidebar section.
 //
@@ -407,10 +422,12 @@ function ResourceRow({
   onRenameLocalDirectory,
 }: ResourceRowProps) {
   const { t } = useT("projects");
+  const wsPaths = useWorkspacePaths();
   if (isGithubRef(resource)) {
     const ref = resource.resource_ref;
     const display = resource.label || (ref.ref ? `${githubShortLabel(ref.url)} @ ${ref.ref}` : githubShortLabel(ref.url));
     const tooltip = ref.ref ? `${ref.url}\nref: ${ref.ref}` : ref.url;
+    const openDocs = isWorkspaceDocsRepo(ref.url);
     return (
       <div className="flex items-center gap-2 text-caption group">
         <FolderGit className="size-3.5 text-muted-foreground shrink-0" />
@@ -429,6 +446,24 @@ function ResourceRow({
           />
           <TooltipContent side="top" className="whitespace-pre-line">{tooltip}</TooltipContent>
         </Tooltip>
+        {openDocs && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <AppLink
+                  href={wsPaths.docs()}
+                  className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-micro text-primary hover:bg-accent"
+                >
+                  <FileText className="size-3" />
+                  {t(($) => $.resources.open_docs)}
+                </AppLink>
+              }
+            />
+            <TooltipContent side="top">
+              {t(($) => $.resources.open_docs_tooltip)}
+            </TooltipContent>
+          </Tooltip>
+        )}
         <button
           type="button"
           onClick={onRemove}
