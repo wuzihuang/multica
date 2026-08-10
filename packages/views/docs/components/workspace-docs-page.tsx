@@ -18,8 +18,9 @@ function resolveDocsAppUrl(): string {
       process.env.NEXT_PUBLIC_DOCS_APP_URL;
     if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, "");
   }
-  // Self-host default for this workspace until env is wired on the Multica web image.
-  return "https://workspace-docs.zephwu.com";
+  // Same-origin reverse proxy default (Zeabur: /docs-app → workspace-docs container).
+  // Override with NEXT_PUBLIC_WORKSPACE_DOCS_URL if needed.
+  return "https://multica.zephwu.com/docs-app";
 }
 
 export function WorkspaceDocsPage() {
