@@ -23,5 +23,10 @@
   "embed": {
     "hint": "If the embed is blank, Notion may block framing — use Open in Notion.",
     "blocked": "Notion blocked the embedded view. Open it in a new tab instead."
+  },
+  "hub": {
+    "title": "Open Notion in a new tab",
+    "lead": "Notion’s main app blocks embedding in Multica (browser security). Use Open in Notion for full pages, pin links on the left for @mentions, and connect Notion so agents can search via MCP.",
+    "hint": "Public notion.site share links can still embed here when available."
   }
 }

@@ -23,5 +23,10 @@
   "embed": {
     "hint": "若嵌入区域空白，可能是 Notion 禁止了 iframe，请用「在 Notion 中打开」。",
     "blocked": "Notion 阻止了嵌入视图，请在新标签页打开。"
+  },
+  "hub": {
+    "title": "在新标签页打开 Notion",
+    "lead": "Notion 主站禁止被 Multica 内嵌（浏览器安全策略）。完整页面请用「在 Notion 中打开」；左侧可固定链接供聊天 @ 引用；连接 Notion 后智能体可通过 MCP 检索。",
+    "hint": "公开的 notion.site 分享页在允许时仍可在此嵌入。"
   }
 }

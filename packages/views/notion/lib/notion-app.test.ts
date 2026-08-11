@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   extractNotionPageId,
   filterNotionPages,
+  isNotionEmbeddableUrl,
+  notionEmbedSrc,
   notionHubHref,
   notionPageUrl,
 } from "./notion-app";
@@ -61,5 +63,35 @@ describe("filterNotionPages", () => {
   it("filters by title case-insensitively", () => {
     expect(filterNotionPages(pages, "sdk")).toHaveLength(1);
     expect(filterNotionPages(pages, "sdk")[0]?.title).toBe("SDK docs");
+  });
+});
+
+describe("isNotionEmbeddableUrl / notionEmbedSrc", () => {
+  it("rejects the main Notion app (causes refused-to-connect in iframe)", () => {
+    expect(isNotionEmbeddableUrl("https://www.notion.so")).toBe(false);
+    expect(isNotionEmbeddableUrl("https://www.notion.com")).toBe(false);
+    expect(isNotionEmbeddableUrl("https://app.notion.com/p/abc")).toBe(false);
+    expect(
+      isNotionEmbeddableUrl(
+        "https://www.notion.so/My-Doc-407f5b5cf6c483d5980881dde05fce38",
+      ),
+    ).toBe(false);
+  });
+
+  it("allows public notion.site share hosts", () => {
+    expect(
+      isNotionEmbeddableUrl("https://acme.notion.site/Doc-abcdef"),
+    ).toBe(true);
+  });
+
+  it("returns null embed src for default hub (no broken iframe)", () => {
+    expect(notionEmbedSrc(null)).toBeNull();
+    expect(notionEmbedSrc("407f5b5cf6c483d5980881dde05fce38")).toBeNull();
+  });
+
+  it("returns embed src with embed=true for notion.site pages", () => {
+    const src = notionEmbedSrc("https://team.notion.site/Hello-abcdef");
+    expect(src).toContain("team.notion.site");
+    expect(src).toContain("embed=true");
   });
 });

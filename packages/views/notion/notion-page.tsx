@@ -33,9 +33,10 @@ function readPageFromLocation(): string | null {
 }
 
 /**
- * Workspace-scoped Notion surface: keeps Multica left nav, fills the right
- * content area with Notion (iframe embed when allowed) plus a recent-pages
- * rail that feeds bubble @notion mentions.
+ * Workspace-scoped Notion surface: keeps Multica left nav, plus a recent-pages
+ * rail that feeds bubble @notion mentions. The main Notion app cannot be iframed
+ * (X-Frame-Options), so we show a hub empty-state and open pages externally
+ * unless the target is a public notion.site share (or a configured embed URL).
  *
  * Deep link: `/{slug}/notion?page=<id-or-url>` focuses that page.
  */
@@ -47,7 +48,6 @@ export function NotionPage() {
   const [pasteUrl, setPasteUrl] = useState("");
   const [pasteTitle, setPasteTitle] = useState("");
   const [connecting, setConnecting] = useState(false);
-  const [embedBlocked, setEmbedBlocked] = useState(false);
 
   const connectionsQuery = useQuery(composioConnectionsOptions());
   const notionConnected = useMemo(() => {
@@ -81,16 +81,6 @@ export function NotionPage() {
     [pageRef],
   );
 
-  // Notion often refuses framing; after a short delay surface the open-external path.
-  useEffect(() => {
-    setEmbedBlocked(false);
-    const timer = window.setTimeout(() => {
-      // We cannot reliably detect X-Frame-Options; offer dual path always after load window.
-      // Keep iframe visible — when it works the user sees Notion; when not, the bar still works.
-    }, 2500);
-    return () => window.clearTimeout(timer);
-  }, [iframeSrc]);
-
   const openPage = useCallback(
     (idOrUrl: string, title?: string) => {
       const id = extractNotionPageId(idOrUrl) ?? idOrUrl.trim();
@@ -101,10 +91,13 @@ export function NotionPage() {
         url,
       });
       refreshRecent();
+      // Main Notion app is not embeddable — open externally and keep hub state.
+      if (!notionEmbedSrc(url)) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
       const href = notionHubHref(wsPaths.notion(), id);
       window.history.pushState({}, "", href);
       setPageRef(id);
-      setEmbedBlocked(false);
     },
     [refreshRecent, wsPaths],
   );
@@ -254,40 +247,65 @@ export function NotionPage() {
           </div>
         </aside>
 
-        {/* Main Notion area */}
+        {/* Main area: embed only when Notion allows framing; otherwise hub UI */}
         <div className="relative min-h-0 min-w-0 flex-1 bg-background">
-          <iframe
-            key={iframeSrc}
-            title={t(($) => $.page.title)}
-            src={iframeSrc}
-            className="h-full w-full border-0 bg-background"
-            // sandbox keeps us honest; allow scripts/forms/popups for Notion login
-            allow="clipboard-read; clipboard-write; fullscreen"
-            referrerPolicy="no-referrer-when-downgrade"
-            onError={() => setEmbedBlocked(true)}
-          />
-          {/* Soft overlay when embed is clearly empty — always available as strip */}
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
-            <p className="pointer-events-none text-caption text-muted-foreground max-w-md text-center">
-              {embedBlocked
-                ? t(($) => $.embed.blocked)
-                : t(($) => $.embed.hint)}
-            </p>
-            <Button
-              size="sm"
-              className="pointer-events-auto"
-              render={
-                <a
-                  href={externalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                />
-              }
-            >
-              <ExternalLink className="size-3.5" />
-              {t(($) => $.actions.open_external)}
-            </Button>
-          </div>
+          {iframeSrc ? (
+            <iframe
+              key={iframeSrc}
+              title={t(($) => $.page.title)}
+              src={iframeSrc}
+              className="h-full w-full border-0 bg-background"
+              allow="clipboard-read; clipboard-write; fullscreen"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-8 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full border bg-muted/40">
+                <StickyNote className="size-6 text-muted-foreground" />
+              </div>
+              <div className="max-w-md space-y-2">
+                <p className="text-body font-medium">
+                  {t(($) => $.hub.title)}
+                </p>
+                <p className="text-caption text-muted-foreground leading-relaxed">
+                  {t(($) => $.hub.lead)}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  size="sm"
+                  render={
+                    <a
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  }
+                >
+                  <ExternalLink className="size-3.5" />
+                  {t(($) => $.actions.open_external)}
+                </Button>
+                {!notionConnected && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={connecting}
+                    onClick={() => void handleConnectNotion()}
+                  >
+                    {connecting ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Plug className="size-3.5" />
+                    )}
+                    {t(($) => $.actions.connect)}
+                  </Button>
+                )}
+              </div>
+              <p className="max-w-sm text-micro text-muted-foreground">
+                {t(($) => $.hub.hint)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

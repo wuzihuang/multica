@@ -1,9 +1,10 @@
 /**
  * Client helpers for the in-product Notion hub (embed + recent pages + mentions).
  *
- * Notion's main app typically refuses iframe embedding (X-Frame-Options). We still
- * attempt an embed when configured, and always support deep links + a recent-page
- * registry that powers bubble @notion mentions with openable URLs.
+ * Notion's main app refuses iframe embedding (X-Frame-Options: SAMEORIGIN /
+ * frame-ancestors self). We never iframe notion.so / notion.com by default —
+ * the hub opens pages externally and only embeds when the URL is known to allow
+ * framing (public notion.site pages, or an operator-configured embed base).
  */
 
 export type NotionPageListItem = {
@@ -18,20 +19,64 @@ export type NotionPageListItem = {
 const RECENT_KEY = "multica.notion.recent_pages";
 const RECENT_MAX = 40;
 
-/** Default Notion workspace home (opens in browser / embed attempt). */
+/** Default Notion workspace home (always open in a new tab — not embeddable). */
 export const DEFAULT_NOTION_HOME = "https://www.notion.so";
 
 /**
- * Base URL for the Notion embed iframe.
- * - NEXT_PUBLIC_NOTION_EMBED_URL: public share page or workspace URL that allows embedding
- * - Falls back to DEFAULT_NOTION_HOME (may be blocked by Notion; UI shows open-external)
+ * True when a URL is likely allowed inside a cross-origin iframe.
+ * - `*.notion.site` public share sites often allow framing
+ * - Operator-configured embed bases that are NOT the main Notion app
+ * Main app hosts (notion.so / notion.com / app.notion.com) always return false.
  */
-export function resolveNotionEmbedUrl(): string {
-  if (typeof process !== "undefined") {
-    const fromEnv = process.env.NEXT_PUBLIC_NOTION_EMBED_URL;
-    if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, "");
+export function isNotionEmbeddableUrl(url: string): boolean {
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = u.hostname.toLowerCase();
+    if (
+      host === "www.notion.so" ||
+      host === "notion.so" ||
+      host === "www.notion.com" ||
+      host === "notion.com" ||
+      host === "app.notion.com"
+    ) {
+      return false;
+    }
+    // Public Notion share sites
+    if (host.endsWith(".notion.site") || host === "notion.site") {
+      return true;
+    }
+    // Explicit operator embed URL on another host (or path) is trusted
+    const configured = resolveConfiguredEmbedBase();
+    if (configured) {
+      try {
+        const base = new URL(configured);
+        if (host === base.hostname.toLowerCase()) return true;
+      } catch {
+        // ignore bad env
+      }
+    }
+    return false;
+  } catch {
+    return false;
   }
-  return DEFAULT_NOTION_HOME;
+}
+
+function resolveConfiguredEmbedBase(): string | null {
+  if (typeof process === "undefined") return null;
+  const fromEnv = process.env.NEXT_PUBLIC_NOTION_EMBED_URL;
+  if (!fromEnv?.trim()) return null;
+  return fromEnv.trim().replace(/\/$/, "");
+}
+
+/**
+ * Base URL for the Notion embed iframe, or null when nothing is safely embeddable.
+ * - NEXT_PUBLIC_NOTION_EMBED_URL: public share / embed-capable URL only
+ * - Does NOT fall back to the main Notion app (would show "refused to connect")
+ */
+export function resolveNotionEmbedUrl(): string | null {
+  const configured = resolveConfiguredEmbedBase();
+  if (configured && isNotionEmbeddableUrl(configured)) return configured;
+  return null;
 }
 
 /** Workspace home link used by "Open Notion" actions. */
@@ -99,15 +144,16 @@ export function notionPageUrl(idOrUrl: string): string {
 }
 
 /**
- * Iframe src for the hub. Optional page deep-link tries the page URL;
- * otherwise loads the configured embed/home base.
+ * Iframe src for the hub, or null when embedding would only show a browser
+ * "refused to connect" error. Prefer opening those URLs externally.
  */
-export function notionEmbedSrc(pageIdOrUrl?: string | null): string {
+export function notionEmbedSrc(pageIdOrUrl?: string | null): string | null {
   if (pageIdOrUrl?.trim()) {
     const url = notionPageUrl(pageIdOrUrl.trim());
-    // Public pages sometimes honor embed=true
+    if (!isNotionEmbeddableUrl(url)) return null;
     try {
       const u = new URL(url);
+      // Public share pages sometimes honor embed=true
       if (!u.searchParams.has("embed")) u.searchParams.set("embed", "true");
       return u.toString();
     } catch {
