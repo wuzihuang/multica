@@ -15,7 +15,7 @@ function readDocPathFromLocation(): string | null {
 
 /**
  * Workspace-scoped Docs surface: embeds the Feishu-style Tiptap editor from
- * the `workspace-docs` service (Markdown true source in `docs/**/*.md`).
+ * the workspace-docs service (Markdown true source under docs/).
  *
  * Deep link: `/{slug}/docs?doc=<path-relative-to-docs/>` opens that file in the
  * iframe (workspace-docs `#/doc/<path>` contract).
