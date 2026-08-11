@@ -22,6 +22,8 @@
   },
   "embed": {
     "hint": "若嵌入区域空白，可能是 Notion 禁止了 iframe，请用「在 Notion 中打开」。",
-    "blocked": "Notion 阻止了嵌入视图，请在新标签页打开。"
+    "blocked": "Notion 阻止了嵌入视图，请在新标签页打开。",
+    "fallback_title": "在新标签页打开 Notion",
+    "fallback_body": "Notion 禁止将其应用嵌入 Multica（浏览器会显示 “refused to connect”）。请用「在 Notion 中打开」访问完整工作区，在左侧固定公开的 *.notion.site 链接，或连接 Notion 以便智能体通过 MCP 检索。"
   }
 }

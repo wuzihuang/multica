@@ -76,19 +76,15 @@ export function NotionPage() {
   }, [refreshRecent]);
 
   const iframeSrc = useMemo(() => notionEmbedSrc(pageRef), [pageRef]);
+  const canEmbed = Boolean(iframeSrc);
   const externalUrl = useMemo(
     () => (pageRef ? notionPageUrl(pageRef) : resolveNotionHomeUrl()),
     [pageRef],
   );
 
-  // Notion often refuses framing; after a short delay surface the open-external path.
+  // Reset embed error state when the src changes (only relevant when we actually iframe).
   useEffect(() => {
     setEmbedBlocked(false);
-    const timer = window.setTimeout(() => {
-      // We cannot reliably detect X-Frame-Options; offer dual path always after load window.
-      // Keep iframe visible — when it works the user sees Notion; when not, the bar still works.
-    }, 2500);
-    return () => window.clearTimeout(timer);
   }, [iframeSrc]);
 
   const openPage = useCallback(
@@ -254,40 +250,86 @@ export function NotionPage() {
           </div>
         </aside>
 
-        {/* Main Notion area */}
+        {/* Main Notion area — never iframe www.notion.com (X-Frame-Options). */}
         <div className="relative min-h-0 min-w-0 flex-1 bg-background">
-          <iframe
-            key={iframeSrc}
-            title={t(($) => $.page.title)}
-            src={iframeSrc}
-            className="h-full w-full border-0 bg-background"
-            // sandbox keeps us honest; allow scripts/forms/popups for Notion login
-            allow="clipboard-read; clipboard-write; fullscreen"
-            referrerPolicy="no-referrer-when-downgrade"
-            onError={() => setEmbedBlocked(true)}
-          />
-          {/* Soft overlay when embed is clearly empty — always available as strip */}
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
-            <p className="pointer-events-none text-caption text-muted-foreground max-w-md text-center">
-              {embedBlocked
-                ? t(($) => $.embed.blocked)
-                : t(($) => $.embed.hint)}
-            </p>
-            <Button
-              size="sm"
-              className="pointer-events-auto"
-              render={
-                <a
-                  href={externalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                />
-              }
-            >
-              <ExternalLink className="size-3.5" />
-              {t(($) => $.actions.open_external)}
-            </Button>
-          </div>
+          {canEmbed && iframeSrc ? (
+            <>
+              <iframe
+                key={iframeSrc}
+                title={t(($) => $.page.title)}
+                src={iframeSrc}
+                className="h-full w-full border-0 bg-background"
+                allow="clipboard-read; clipboard-write; fullscreen"
+                referrerPolicy="no-referrer-when-downgrade"
+                onError={() => setEmbedBlocked(true)}
+              />
+              <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
+                <p className="pointer-events-none text-caption text-muted-foreground max-w-md text-center">
+                  {embedBlocked
+                    ? t(($) => $.embed.blocked)
+                    : t(($) => $.embed.hint)}
+                </p>
+                <Button
+                  size="sm"
+                  className="pointer-events-auto"
+                  render={
+                    <a
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  }
+                >
+                  <ExternalLink className="size-3.5" />
+                  {t(($) => $.actions.open_external)}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-8 text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl border bg-muted/40">
+                <StickyNote className="size-7 text-muted-foreground" />
+              </div>
+              <div className="max-w-md space-y-2">
+                <h2 className="text-body font-medium">
+                  {t(($) => $.embed.fallback_title)}
+                </h2>
+                <p className="text-caption text-muted-foreground leading-relaxed">
+                  {t(($) => $.embed.fallback_body)}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  size="default"
+                  render={
+                    <a
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  }
+                >
+                  <ExternalLink className="size-3.5" />
+                  {t(($) => $.actions.open_external)}
+                </Button>
+                {!notionConnected && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    disabled={connecting}
+                    onClick={() => void handleConnectNotion()}
+                  >
+                    {connecting ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Plug className="size-3.5" />
+                    )}
+                    {t(($) => $.actions.connect)}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

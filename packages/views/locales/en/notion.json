@@ -22,6 +22,8 @@
   },
   "embed": {
     "hint": "If the embed is blank, Notion may block framing — use Open in Notion.",
-    "blocked": "Notion blocked the embedded view. Open it in a new tab instead."
+    "blocked": "Notion blocked the embedded view. Open it in a new tab instead.",
+    "fallback_title": "Open Notion in a new tab",
+    "fallback_body": "Notion blocks embedding its app inside Multica (browser shows “refused to connect”). Use Open in Notion for the full workspace, pin public *.notion.site links in the rail, or connect Notion so agents can search via MCP."
   }
 }
