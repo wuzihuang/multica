@@ -18,6 +18,7 @@ describe("parseTabSubject", () => {
     ["/acme/runtimes", { kind: "page", page: "runtimes" }],
     ["/acme/skills", { kind: "page", page: "skills" }],
     ["/acme/docs", { kind: "page", page: "docs" }],
+    ["/acme/notion", { kind: "page", page: "notion" }],
     ["/acme/settings", { kind: "page", page: "settings" }],
     // Resource details
     ["/acme/issues/bug-1", { kind: "issue", id: "bug-1" }],

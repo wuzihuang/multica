@@ -76,7 +76,8 @@ function useLinkHover(containerRef: React.RefObject<HTMLElement | null>, disable
       if (
         link.classList.contains("issue-mention") ||
         link.classList.contains("project-mention") ||
-        link.classList.contains("document-mention")
+        link.classList.contains("document-mention") ||
+        link.classList.contains("notion-mention")
       ) {
         return;
       }

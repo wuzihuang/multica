@@ -1,0 +1,27 @@
+{
+  "page": {
+    "title": "Notion"
+  },
+  "status": {
+    "connected": "Notion connected (agents can search via MCP)",
+    "not_connected": "Notion not connected for this account"
+  },
+  "actions": {
+    "connect": "Connect Notion",
+    "open_external": "Open in Notion",
+    "manage_integration": "Integrations"
+  },
+  "rail": {
+    "add_title": "Save a Notion page",
+    "title_placeholder": "Title (optional)",
+    "url_placeholder": "Paste Notion page URL…",
+    "save": "Save to list",
+    "recent": "Recent pages",
+    "empty": "Paste a Notion link to pin it here. Saved pages appear in the chat @ picker.",
+    "mention_hint": "In the chat bubble, type @ and pick a Notion page to insert a link chip."
+  },
+  "embed": {
+    "hint": "If the embed is blank, Notion may block framing — use Open in Notion.",
+    "blocked": "Notion blocked the embedded view. Open it in a new tab instead."
+  }
+}

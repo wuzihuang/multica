@@ -1,0 +1,27 @@
+{
+  "page": {
+    "title": "Notion"
+  },
+  "status": {
+    "connected": "Notion 接続済み（エージェントは MCP で検索可能）",
+    "not_connected": "このアカウントは Notion 未接続です"
+  },
+  "actions": {
+    "connect": "Notion を接続",
+    "open_external": "Notion で開く",
+    "manage_integration": "連携設定"
+  },
+  "rail": {
+    "add_title": "Notion ページを保存",
+    "title_placeholder": "タイトル（任意）",
+    "url_placeholder": "Notion ページ URL を貼り付け…",
+    "save": "リストに追加",
+    "recent": "最近のページ",
+    "empty": "Notion リンクを貼るとここに固定されます。保存したページはチャットの @ 候補に出ます。",
+    "mention_hint": "チャットバブルで @ を入力し、Notion ページを選ぶとリンクチップが挿入されます。"
+  },
+  "embed": {
+    "hint": "埋め込みが空白の場合、Notion が iframe を拒否している可能性があります。「Notion で開く」を使ってください。",
+    "blocked": "Notion が埋め込みをブロックしました。新しいタブで開いてください。"
+  }
+}

@@ -55,6 +55,8 @@ function workspaceScoped(slug: string) {
     skillDetail: (id: string) => `${ws}/skills/${encode(id)}`,
     /** Workspace Markdown docs (Feishu-style editor; embeds workspace-docs). */
     docs: () => `${ws}/docs`,
+    /** Notion workspace hub (embed / open user's Notion docs). */
+    notion: () => `${ws}/notion`,
     settings: () => `${ws}/settings`,
     attachmentPreview: (id: string) => `${ws}/attachments/${encode(id)}/preview`,
   };
