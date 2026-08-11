@@ -47,9 +47,14 @@ export const BaseMentionExtension = Mention.extend({
   },
   renderHTML({ node, HTMLAttributes }) {
     const type = node.attrs.type ?? "member";
-    // issue / project / document are navigable entity chips — no leading @.
+    // issue / project / document / notion are navigable entity chips — no leading @.
     const prefix =
-      type === "issue" || type === "project" || type === "document" ? "" : "@";
+      type === "issue" ||
+      type === "project" ||
+      type === "document" ||
+      type === "notion"
+        ? ""
+        : "@";
     return [
       "span",
       mergeAttributes(
@@ -109,9 +114,14 @@ export const BaseMentionExtension = Mention.extend({
   },
   renderMarkdown: (node: any) => {
     const { id, label, type = "member" } = node.attrs || {};
-    // issue / project / document: pure-render entity chips (no @ trigger prefix).
+    // issue / project / document / notion: pure-render entity chips (no @ trigger prefix).
     const prefix =
-      type === "issue" || type === "project" || type === "document" ? "" : "@";
+      type === "issue" ||
+      type === "project" ||
+      type === "document" ||
+      type === "notion"
+        ? ""
+        : "@";
     // Escape [ ] \ ( ) in the label so the markdown link syntax is not broken
     // and the label survives the linear tokenizer (which now treats "\" as an
     // escape lead, not an ordinary char). Must stay in sync with the unescape

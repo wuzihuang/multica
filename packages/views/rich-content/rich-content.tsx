@@ -57,6 +57,7 @@ import { IssueMentionCard } from "../issues/components/issue-mention-card";
 import { useResolveIssueIdentifier } from "../issues/hooks";
 import { ProjectMentionCard } from "../projects/components/project-mention-card";
 import { DocumentMentionCard } from "../docs/components/document-mention-card";
+import { NotionMentionCard } from "../notion/components/notion-mention-card";
 import { useLinkHover, LinkHoverCard } from "../editor/link-hover-card";
 import {
   openLink,
@@ -177,6 +178,21 @@ function DocumentMentionLink({
   );
 }
 
+/** Notion mention chip — pure render, never enqueues an agent (LOC-90). */
+function NotionMentionLink({
+  pageId,
+  label,
+}: {
+  pageId: string;
+  label?: string;
+}) {
+  return (
+    <span className="inline align-middle" onClick={(e) => e.stopPropagation()}>
+      <NotionMentionCard pageId={pageId} fallbackLabel={label} />
+    </span>
+  );
+}
+
 function childrenToLabel(children: ReactNode): string | undefined {
   if (typeof children === "string") return children;
   if (Array.isArray(children)) return children.join("");
@@ -232,7 +248,7 @@ function RichLink({ href, children }: { href?: string; children?: ReactNode }) {
 
   if (isMentionHref(href)) {
     const match = href.match(
-      /^mention:\/\/(member|agent|squad|issue|project|document|all)\/(.+)$/,
+      /^mention:\/\/(member|agent|squad|issue|project|document|notion|all)\/(.+)$/,
     );
     if (match?.[1] === "issue" && match[2]) {
       // A bare identifier (from the autolink preprocessor) is carried as the id
@@ -254,6 +270,14 @@ function RichLink({ href, children }: { href?: string; children?: ReactNode }) {
       return (
         <DocumentMentionLink
           documentId={match[2]}
+          label={childrenToLabel(children)}
+        />
+      );
+    }
+    if (match?.[1] === "notion" && match[2]) {
+      return (
+        <NotionMentionLink
+          pageId={match[2]}
           label={childrenToLabel(children)}
         />
       );

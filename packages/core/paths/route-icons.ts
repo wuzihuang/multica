@@ -32,6 +32,7 @@ export type RouteIconName =
   | "Monitor"
   | "Server"
   | "BookOpenText"
+  | "StickyNote"
   | "Settings"
   | "File"
   | "FileText"
@@ -56,6 +57,7 @@ export type NavLabelKey =
   | "runtimes"
   | "skills"
   | "docs"
+  | "notion"
   | "settings";
 
 /** Stable identifier for each workspace navigation page. */
@@ -72,6 +74,7 @@ export type WorkspacePageKey =
   | "runtimes"
   | "skills"
   | "docs"
+  | "notion"
   | "settings";
 
 export interface WorkspacePage {
@@ -100,6 +103,7 @@ export const WORKSPACE_PAGES: Record<WorkspacePageKey, WorkspacePage> = {
   runtimes: { segment: "runtimes", icon: "Monitor", navKey: "runtimes" },
   skills: { segment: "skills", icon: "BookOpenText", navKey: "skills" },
   docs: { segment: "docs", icon: "FileText", navKey: "docs" },
+  notion: { segment: "notion", icon: "StickyNote", navKey: "notion" },
   settings: { segment: "settings", icon: "Settings", navKey: "settings" },
 };
 

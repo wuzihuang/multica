@@ -30,7 +30,7 @@ import type {
   Agent,
   Squad,
 } from "@multica/core/types";
-import { FileText, ListTodo } from "lucide-react";
+import { FileText, ListTodo, StickyNote } from "lucide-react";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { StatusIcon } from "../../issues/components/status-icon";
 import { ProjectIcon } from "../../projects/components/project-icon";
@@ -66,6 +66,11 @@ import {
   filterWorkspaceDocs,
   type WorkspaceDocListItem,
 } from "../../docs/lib/docs-app";
+import {
+  filterNotionPages,
+  listRecentNotionPages,
+  type NotionPageListItem,
+} from "../../notion/lib/notion-app";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,7 +79,15 @@ import {
 export interface MentionItem {
   id: string;
   label: string;
-  type: "member" | "agent" | "squad" | "issue" | "project" | "document" | "all";
+  type:
+    | "member"
+    | "agent"
+    | "squad"
+    | "issue"
+    | "project"
+    | "document"
+    | "notion"
+    | "all";
   /** Optional grouping hint for injected context items. */
   group?: "current" | "recent" | "search";
   /** Secondary text shown beside the label (e.g. issue title) */
@@ -116,6 +129,7 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
   const users: MentionItem[] = [];
   const issues: MentionItem[] = [];
   const documents: MentionItem[] = [];
+  const notionPages: MentionItem[] = [];
   const cancelled: MentionItem[] = [];
 
   for (const item of items) {
@@ -128,6 +142,8 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
     } else if (item.type === "document") {
       // Documents keep their own section even when tagged as search results.
       documents.push(item);
+    } else if (item.type === "notion") {
+      notionPages.push(item);
     } else if (item.group === "search") {
       search.push(item);
     } else if (item.type === "issue" || item.type === "project") {
@@ -145,6 +161,8 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
   if (issues.length > 0) groups.push({ label: "Issues", items: issues });
   // Product label for workspace Markdown docs (LOC-79).
   if (documents.length > 0) groups.push({ label: "Documents", items: documents });
+  // Notion pages saved/opened from the Notion hub (LOC-90).
+  if (notionPages.length > 0) groups.push({ label: "Notion", items: notionPages });
   // Always last: no cancelled row of any type may precede a live one.
   if (cancelled.length > 0) groups.push({ label: "Cancelled", items: cancelled });
   return groups;
@@ -313,6 +331,16 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
               )
               .catch(() => [] as MentionItem[]);
 
+            // Notion pages from the local hub registry (no network).
+            const notionItems = filterNotionPages(
+              listRecentNotionPages(),
+              q,
+              SERVER_CONTEXT_SEARCH_LIMIT,
+            ).map((page) => ({
+              ...notionToMention(page),
+              group: "search" as const,
+            }));
+
             if (includeProjectSearch) {
               const [issues, projects, docs] = await Promise.all([
                 api.searchIssues({
@@ -334,6 +362,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                   ...issues.issues.map((issue) => ({ ...issueToMention(issue), group: "search" as const })),
                   ...projects.projects.map((project) => ({ ...projectToMention(project), group: "search" as const })),
                   ...docs,
+                  ...notionItems,
                 ]);
               }
             } else {
@@ -350,6 +379,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                 setServerItems([
                   ...res.issues.map(issueToMention),
                   ...docs,
+                  ...notionItems,
                 ]);
               }
             }
@@ -645,6 +675,36 @@ function MentionRow({
     );
   }
 
+  if (item.type === "notion") {
+    const rowTitle = item.label.replace(/^📓\s*/, "");
+    return (
+      <button
+        type="button"
+        ref={buttonRef}
+        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-caption transition-colors ${
+          selected ? "bg-accent" : "hover:bg-accent/50"
+        }`}
+        onClick={onSelect}
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+          <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-foreground">{rowTitle}</span>
+          {item.description && (
+            <span className="block truncate text-muted-foreground">
+              {item.description}
+            </span>
+          )}
+        </span>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Badge variant="outline" className="ml-auto text-micro h-4 px-1.5">
+          Notion
+        </Badge>
+      </button>
+    );
+  }
+
   const disabledMessage = item.disabledReason
     ? blockedReasonLabel(item.disabledReason, issuesT)
     : null;
@@ -727,6 +787,16 @@ function documentToMention(d: WorkspaceDocListItem): MentionItem {
     label: `📄 ${d.title}`,
     type: "document" as const,
     description: d.path,
+  };
+}
+
+/** Insert form: `[📓 Title](mention://notion/<page-id>)` — pure render + openable link. */
+function notionToMention(p: NotionPageListItem): MentionItem {
+  return {
+    id: p.id,
+    label: `📓 ${p.title}`,
+    type: "notion" as const,
+    description: p.url,
   };
 }
 
@@ -851,7 +921,14 @@ export function createMentionSuggestion(
       )
       .map(issueToMention);
 
-    return [...allItem, ...userItems, ...issueItems];
+    // Notion pages from the hub's localStorage registry (LOC-90).
+    const notionItems = filterNotionPages(
+      listRecentNotionPages(),
+      query,
+      10,
+    ).map(notionToMention);
+
+    return [...allItem, ...userItems, ...issueItems, ...notionItems];
   }
 
   return {

@@ -1,0 +1,27 @@
+{
+  "page": {
+    "title": "Notion"
+  },
+  "status": {
+    "connected": "已连接 Notion（智能体可通过 MCP 检索）",
+    "not_connected": "当前账号尚未连接 Notion"
+  },
+  "actions": {
+    "connect": "连接 Notion",
+    "open_external": "在 Notion 中打开",
+    "manage_integration": "集成设置"
+  },
+  "rail": {
+    "add_title": "保存 Notion 页面",
+    "title_placeholder": "标题（可选）",
+    "url_placeholder": "粘贴 Notion 页面链接…",
+    "save": "加入列表",
+    "recent": "最近页面",
+    "empty": "粘贴 Notion 链接以固定到此处。已保存页面会出现在聊天 @ 选择器中。",
+    "mention_hint": "在右下角气泡中输入 @，选择 Notion 页面即可插入可打开的链接芯片。"
+  },
+  "embed": {
+    "hint": "若嵌入区域空白，可能是 Notion 禁止了 iframe，请用「在 Notion 中打开」。",
+    "blocked": "Notion 阻止了嵌入视图，请在新标签页打开。"
+  }
+}
