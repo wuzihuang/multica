@@ -4,12 +4,12 @@
  * MentionView — NodeView for rendering @mentions inline in the editor.
  *
  * Member/agent mentions: plain "@Name" text with .mention class styling.
- * Issue/project mentions render the same navigable chips as readonly content
- * (IssueMentionCard / ProjectMentionCard), so click behavior — plain click,
- * modifier click, middle click — cannot drift between an editing and a
- * readonly surface. The editor's ProseMirror click handler skips anything
- * inside `[data-node-view-wrapper]`, so the AppLink inside the card owns the
- * click alone.
+ * Issue/project/document mentions render the same navigable chips as readonly
+ * content (IssueMentionCard / ProjectMentionCard / DocumentMentionCard), so
+ * click behavior — plain click, modifier click, middle click — cannot drift
+ * between an editing and a readonly surface. The editor's ProseMirror click
+ * handler skips anything inside `[data-node-view-wrapper]`, so the AppLink
+ * inside the card owns the click alone.
  *
  * Issue chip sizing: must fit within the paragraph line box (14px * 1.625 =
  * 22.75px). Card is text-caption (12px) + py-0.5 + border ≈ 22px total. The
@@ -22,6 +22,7 @@ import { NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { IssueMentionCard } from "../../issues/components/issue-mention-card";
 import { ProjectMentionCard } from "../../projects/components/project-mention-card";
+import { DocumentMentionCard } from "../../docs/components/document-mention-card";
 
 export function MentionView({ node }: NodeViewProps) {
   const { type, id, label } = node.attrs;
@@ -48,6 +49,18 @@ export function MentionView({ node }: NodeViewProps) {
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         <ProjectMentionCard projectId={id} fallbackLabel={label} />
+      </NodeViewWrapper>
+    );
+  }
+
+  if (type === "document") {
+    return (
+      <NodeViewWrapper
+        as="span"
+        className="inline"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <DocumentMentionCard documentId={id} fallbackLabel={label} />
       </NodeViewWrapper>
     );
   }

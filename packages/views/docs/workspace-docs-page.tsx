@@ -1,53 +1,42 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, FileText } from "lucide-react";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { Button } from "@multica/ui/components/ui/button";
 import { useT } from "../i18n";
+import { docsAppEmbedUrl, resolveDocsAppUrl } from "./lib/docs-app";
 
-/**
- * Resolve the public URL of the Workspace Docs service.
- *
- * Set `NEXT_PUBLIC_WORKSPACE_DOCS_URL` at web build/runtime (e.g.
- * `https://docs.example.com` or a reverse-proxied path on the same host).
- * When unset, we show setup instructions instead of a blank iframe.
- */
-function resolveDocsBaseUrl(): string {
-  const raw =
-    (typeof process !== "undefined" &&
-      process.env.NEXT_PUBLIC_WORKSPACE_DOCS_URL) ||
-    "";
-  return raw.replace(/\/+$/, "");
+function readDocPathFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("doc") || params.get("path");
 }
 
 /**
  * Workspace-scoped Docs surface: embeds the Feishu-style Tiptap editor from
  * the `workspace-docs` service (Markdown true source in `docs/**/*.md`).
+ *
+ * Deep link: `/{slug}/docs?doc=<path-relative-to-docs/>` opens that file in the
+ * iframe (workspace-docs `#/doc/<path>` contract).
  */
 export function WorkspaceDocsPage() {
   const { t } = useT("docs");
   const wsPaths = useWorkspacePaths();
-  const base = useMemo(() => resolveDocsBaseUrl(), []);
+  const [docPath, setDocPath] = useState<string | null>(null);
 
+  useEffect(() => {
+    setDocPath(readDocPathFromLocation());
+    const onPop = () => setDocPath(readDocPathFromLocation());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const base = useMemo(() => resolveDocsAppUrl(), []);
   const iframeSrc = useMemo(() => {
     if (!base) return "";
-    try {
-      const absolute = /^https?:\/\//i.test(base)
-        ? new URL(base)
-        : new URL(
-            base,
-            typeof window !== "undefined"
-              ? window.location.origin
-              : "http://localhost",
-          );
-      absolute.searchParams.set("embed", "1");
-      return absolute.toString();
-    } catch {
-      const sep = base.includes("?") ? "&" : "?";
-      return `${base}${sep}embed=1`;
-    }
-  }, [base]);
+    return docsAppEmbedUrl(docPath);
+  }, [base, docPath]);
 
   if (!base) {
     return (
@@ -110,6 +99,7 @@ NEXT_PUBLIC_WORKSPACE_DOCS_URL=https://docs.<your-host>`}
   return (
     <div className="absolute inset-0 min-h-0">
       <iframe
+        key={iframeSrc}
         title={t(($) => $.page.title)}
         src={iframeSrc}
         className="h-full w-full border-0 bg-background"

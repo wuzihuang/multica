@@ -30,7 +30,7 @@ import type {
   Agent,
   Squad,
 } from "@multica/core/types";
-import { ListTodo } from "lucide-react";
+import { FileText, ListTodo } from "lucide-react";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { StatusIcon } from "../../issues/components/status-icon";
 import { ProjectIcon } from "../../projects/components/project-icon";
@@ -61,6 +61,11 @@ import {
 } from "../../common/picker-keys";
 import { isTriggerArmedAt } from "./suggestion-trigger-arming";
 import { blockedReasonLabel } from "../../issues/blocked-trigger-copy";
+import {
+  fetchWorkspaceDocs,
+  filterWorkspaceDocs,
+  type WorkspaceDocListItem,
+} from "../../docs/lib/docs-app";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,7 +74,7 @@ import { blockedReasonLabel } from "../../issues/blocked-trigger-copy";
 export interface MentionItem {
   id: string;
   label: string;
-  type: "member" | "agent" | "squad" | "issue" | "project" | "all";
+  type: "member" | "agent" | "squad" | "issue" | "project" | "document" | "all";
   /** Optional grouping hint for injected context items. */
   group?: "current" | "recent" | "search";
   /** Secondary text shown beside the label (e.g. issue title) */
@@ -110,6 +115,7 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
   const search: MentionItem[] = [];
   const users: MentionItem[] = [];
   const issues: MentionItem[] = [];
+  const documents: MentionItem[] = [];
   const cancelled: MentionItem[] = [];
 
   for (const item of items) {
@@ -119,6 +125,9 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
       current.push(item);
     } else if (item.group === "recent") {
       recent.push(item);
+    } else if (item.type === "document") {
+      // Documents keep their own section even when tagged as search results.
+      documents.push(item);
     } else if (item.group === "search") {
       search.push(item);
     } else if (item.type === "issue" || item.type === "project") {
@@ -134,6 +143,8 @@ function groupItems(items: MentionItem[], query: string): MentionGroup[] {
   if (search.length > 0) groups.push({ label: "Search", items: search });
   if (users.length > 0) groups.push({ label: "Users", items: users });
   if (issues.length > 0) groups.push({ label: "Issues", items: issues });
+  // Product label for workspace Markdown docs (LOC-79).
+  if (documents.length > 0) groups.push({ label: "Documents", items: documents });
   // Always last: no cancelled row of any type may precede a live one.
   if (cancelled.length > 0) groups.push({ label: "Cancelled", items: cancelled });
   return groups;
@@ -292,8 +303,18 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
       const timer = setTimeout(() => {
         void (async () => {
           try {
+            // Always try workspace docs (external list API). Failures are soft —
+            // docs app may be undeployed; other mention groups still work.
+            const docsPromise = fetchWorkspaceDocs({ signal: controller.signal })
+              .then((docs) =>
+                filterWorkspaceDocs(docs, q, SERVER_CONTEXT_SEARCH_LIMIT).map(
+                  (doc) => ({ ...documentToMention(doc), group: "search" as const }),
+                ),
+              )
+              .catch(() => [] as MentionItem[]);
+
             if (includeProjectSearch) {
-              const [issues, projects] = await Promise.all([
+              const [issues, projects, docs] = await Promise.all([
                 api.searchIssues({
                   q,
                   limit: SERVER_CONTEXT_SEARCH_LIMIT,
@@ -306,22 +327,30 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                   include_closed: true,
                   signal: controller.signal,
                 }),
+                docsPromise,
               ]);
               if (!cancelled && !controller.signal.aborted) {
                 setServerItems([
                   ...issues.issues.map((issue) => ({ ...issueToMention(issue), group: "search" as const })),
                   ...projects.projects.map((project) => ({ ...projectToMention(project), group: "search" as const })),
+                  ...docs,
                 ]);
               }
             } else {
-              const res = await api.searchIssues({
-                q,
-                limit: SERVER_ISSUE_SEARCH_LIMIT,
-                include_closed: true,
-                signal: controller.signal,
-              });
+              const [res, docs] = await Promise.all([
+                api.searchIssues({
+                  q,
+                  limit: SERVER_ISSUE_SEARCH_LIMIT,
+                  include_closed: true,
+                  signal: controller.signal,
+                }),
+                docsPromise,
+              ]);
               if (!cancelled && !controller.signal.aborted) {
-                setServerItems(res.issues.map(issueToMention));
+                setServerItems([
+                  ...res.issues.map(issueToMention),
+                  ...docs,
+                ]);
               }
             }
           } catch {
@@ -585,6 +614,37 @@ function MentionRow({
     );
   }
 
+  if (item.type === "document") {
+    // Strip the leading 📄 used in the inserted markdown label for the row title.
+    const rowTitle = item.label.replace(/^📄\s*/, "");
+    return (
+      <button
+        type="button"
+        ref={buttonRef}
+        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-caption transition-colors ${
+          selected ? "bg-accent" : "hover:bg-accent/50"
+        }`}
+        onClick={onSelect}
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-foreground">{rowTitle}</span>
+          {item.description && (
+            <span className="block truncate text-muted-foreground">
+              {item.description}
+            </span>
+          )}
+        </span>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Badge variant="outline" className="ml-auto text-micro h-4 px-1.5">
+          Doc
+        </Badge>
+      </button>
+    );
+  }
+
   const disabledMessage = item.disabledReason
     ? blockedReasonLabel(item.disabledReason, issuesT)
     : null;
@@ -657,6 +717,16 @@ function projectToMention(p: { id: string; title: string; description?: string |
     description: p.description ?? undefined,
     icon: p.icon ?? null,
     projectStatus: p.status,
+  };
+}
+
+/** Insert form: `[📄 Title](mention://document/<frontmatter-id>)` — pure render. */
+function documentToMention(d: WorkspaceDocListItem): MentionItem {
+  return {
+    id: d.id,
+    label: `📄 ${d.title}`,
+    type: "document" as const,
+    description: d.path,
   };
 }
 
