@@ -90,6 +90,8 @@
     "repos_search_empty": "検索条件に一致するリポジトリはありません。",
     "attached_badge": "添付済み",
     "remove_tooltip": "削除",
+    "open_docs": "ドキュメントを開く",
+    "open_docs_tooltip": "ワークスペースドキュメント編集を開く",
     "url_placeholder": "https://github.com/owner/repo or git@github.com:owner/repo.git",
     "url_submit": "追加",
     "toast_attached": "リポジトリを添付しました",

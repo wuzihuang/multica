@@ -90,6 +90,8 @@
     "repos_search_empty": "검색 결과와 일치하는 저장소가 없습니다.",
     "attached_badge": "연결됨",
     "remove_tooltip": "제거",
+    "open_docs": "문서 열기",
+    "open_docs_tooltip": "워크스페이스 문서 편집기 열기",
     "url_placeholder": "https://github.com/owner/repo or git@github.com:owner/repo.git",
     "url_submit": "추가",
     "toast_attached": "저장소를 연결했습니다",

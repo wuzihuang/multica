@@ -1,0 +1,14 @@
+{
+  "page": {
+    "title": "문서"
+  },
+  "setup": {
+    "lead": "워크스페이스 문서 편집기 URL이 아직 연결되지 않았습니다. workspace-docs를 배포한 뒤 Multica Web을 가리키세요.",
+    "step_deploy": "wuzihuang/workspace-docs를 빌드·실행하세요(Docker 또는 npm run build && npm start).",
+    "step_env": "NEXT_PUBLIC_WORKSPACE_DOCS_URL에 공개 URL(또는 동일 출처 리버스 프록시)을 설정하세요.",
+    "step_rebuild": "환경 변수가 클라이언트 번들에 들어가도록 multica-web을 다시 빌드/배포하세요.",
+    "local_hint": "로컬: workspace-docs에서 npm run dev → http://localhost:5177, NEXT_PUBLIC_WORKSPACE_DOCS_URL=http://localhost:5177.",
+    "open_repo": "workspace-docs 열기",
+    "back_projects": "프로젝트로 돌아가기"
+  }
+}

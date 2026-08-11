@@ -91,6 +91,8 @@
     "repos_search_empty": "No repositories match your search.",
     "attached_badge": "attached",
     "remove_tooltip": "Remove",
+    "open_docs": "Open docs",
+    "open_docs_tooltip": "Open workspace docs editor",
     "url_placeholder": "https://github.com/owner/repo or git@github.com:owner/repo.git",
     "url_submit": "Add",
     "toast_attached": "Repository attached",

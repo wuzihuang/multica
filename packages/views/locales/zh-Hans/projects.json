@@ -90,6 +90,8 @@
     "repos_search_empty": "没有匹配的仓库。",
     "attached_badge": "已关联",
     "remove_tooltip": "移除",
+    "open_docs": "打开文档",
+    "open_docs_tooltip": "打开工作区文档编辑器",
     "url_placeholder": "https://github.com/owner/repo 或 git@github.com:owner/repo.git",
     "url_submit": "添加",
     "toast_attached": "已关联仓库",

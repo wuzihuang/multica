@@ -1,0 +1,14 @@
+{
+  "page": {
+    "title": "Docs"
+  },
+  "setup": {
+    "lead": "Workspace Docs is not wired to a live editor URL yet. Deploy the workspace-docs service, then point Multica web at it.",
+    "step_deploy": "Build and run wuzihuang/workspace-docs (Docker image or npm run build && npm start).",
+    "step_env": "Set NEXT_PUBLIC_WORKSPACE_DOCS_URL to that service’s public URL (or a reverse-proxied path).",
+    "step_rebuild": "Rebuild/redeploy multica-web so the env is baked into the client bundle.",
+    "local_hint": "Local dev: npm run dev in workspace-docs → http://localhost:5177, then NEXT_PUBLIC_WORKSPACE_DOCS_URL=http://localhost:5177.",
+    "open_repo": "Open workspace-docs",
+    "back_projects": "Back to projects"
+  }
+}
