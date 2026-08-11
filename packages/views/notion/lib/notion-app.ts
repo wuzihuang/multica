@@ -1,9 +1,13 @@
 /**
  * Client helpers for the in-product Notion hub (embed + recent pages + mentions).
  *
- * Notion's main app typically refuses iframe embedding (X-Frame-Options). We still
- * attempt an embed when configured, and always support deep links + a recent-page
- * registry that powers bubble @notion mentions with openable URLs.
+ * Notion's main app (www.notion.so / www.notion.com / app.notion.com) refuses
+ * iframe embedding (X-Frame-Options / CSP frame-ancestors). Loading those hosts
+ * in an iframe produces the browser error "www.notion.com refused to connect".
+ *
+ * We only embed URLs that are known-or-configured to allow framing (public
+ * notion.site shares, or NEXT_PUBLIC_NOTION_EMBED_URL). Everything else uses
+ * deep links + a recent-page registry for bubble @notion mentions.
  */
 
 export type NotionPageListItem = {
@@ -18,20 +22,78 @@ export type NotionPageListItem = {
 const RECENT_KEY = "multica.notion.recent_pages";
 const RECENT_MAX = 40;
 
-/** Default Notion workspace home (opens in browser / embed attempt). */
+/** Default Notion workspace home (opens in browser — not embeddable). */
 export const DEFAULT_NOTION_HOME = "https://www.notion.so";
 
 /**
- * Base URL for the Notion embed iframe.
- * - NEXT_PUBLIC_NOTION_EMBED_URL: public share page or workspace URL that allows embedding
- * - Falls back to DEFAULT_NOTION_HOME (may be blocked by Notion; UI shows open-external)
+ * Hosts that Notion hard-blocks from iframe embedding.
+ * Browsers show "refused to connect" when these are loaded in an iframe.
  */
-export function resolveNotionEmbedUrl(): string {
+export function isNotionAppHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return (
+    h === "notion.so" ||
+    h === "www.notion.so" ||
+    h === "notion.com" ||
+    h === "www.notion.com" ||
+    h === "app.notion.com"
+  );
+}
+
+/**
+ * Whether a URL is worth attempting as an iframe src.
+ * - Public share hosts (*.notion.site) often allow embedding
+ * - Explicit NEXT_PUBLIC_NOTION_EMBED_URL base is always allowed (operator opt-in)
+ * - Main Notion app hosts are never embeddable
+ */
+export function isEmbeddableNotionUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    if (isNotionAppHost(u.hostname)) return false;
+    // Public share sites: workspace.notion.site
+    if (/(^|\.)notion\.site$/i.test(u.hostname)) return true;
+    // Operator-configured embed base (may be any allowlisted host)
+    if (typeof process !== "undefined") {
+      const configured = process.env.NEXT_PUBLIC_NOTION_EMBED_URL?.trim();
+      if (configured) {
+        try {
+          const base = new URL(configured);
+          if (u.origin === base.origin) return true;
+        } catch {
+          // ignore invalid env
+        }
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Base URL for the Notion embed iframe, or null when no embeddable base is configured.
+ * - NEXT_PUBLIC_NOTION_EMBED_URL: public share page / host that allows embedding
+ * - Default: null (do not iframe www.notion.so — it always refuses)
+ */
+export function resolveNotionEmbedUrl(): string | null {
   if (typeof process !== "undefined") {
     const fromEnv = process.env.NEXT_PUBLIC_NOTION_EMBED_URL;
-    if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, "");
+    if (fromEnv?.trim()) {
+      const url = fromEnv.trim().replace(/\/$/, "");
+      // Even if misconfigured to notion.so, refuse — that causes "refused to connect"
+      if (!isNotionAppHost(safeHostname(url))) return url;
+    }
   }
-  return DEFAULT_NOTION_HOME;
+  return null;
+}
+
+function safeHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
 }
 
 /** Workspace home link used by "Open Notion" actions. */
@@ -99,12 +161,15 @@ export function notionPageUrl(idOrUrl: string): string {
 }
 
 /**
- * Iframe src for the hub. Optional page deep-link tries the page URL;
- * otherwise loads the configured embed/home base.
+ * Iframe src for the hub, or null when embedding would only show
+ * "refused to connect". Optional page deep-link embeds only when the URL is
+ * embeddable (e.g. *.notion.site); otherwise returns null so the UI can show
+ * an open-external fallback.
  */
-export function notionEmbedSrc(pageIdOrUrl?: string | null): string {
+export function notionEmbedSrc(pageIdOrUrl?: string | null): string | null {
   if (pageIdOrUrl?.trim()) {
     const url = notionPageUrl(pageIdOrUrl.trim());
+    if (!isEmbeddableNotionUrl(url)) return null;
     // Public pages sometimes honor embed=true
     try {
       const u = new URL(url);
